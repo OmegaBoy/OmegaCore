@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Npgsql;
 using Omegacorp.Core.Model.Utilities;
-using Omegacorp.Core.Utilities;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -21,10 +20,18 @@ namespace Omegacorp.Core.IO
             _transaction = sqlTransaction;
         }
 
-        public Pagination<T> Search(IEnumerable<int> IDs = null, string description = null, PaginationFilter paginationFilter = null)
+        public Pagination<T> Search(IEnumerable<int> IDs = null, string description = null, PaginationFilter paginationFilter = null, IEnumerable<ExtraWhere> extraWheres = null)
         {
             var where = new List<string>();
             var dbArgs = new DynamicParameters();
+            if (extraWheres != null && extraWheres.Any())
+            {
+                foreach (var extraWhere in extraWheres)
+                {
+                    where.Add(extraWhere.Statement);
+                    dbArgs.Add(extraWhere.ParameterName, value: extraWhere.ParameterValue, dbType: extraWhere.ParameterType);
+                }
+            }
             if (IDs != null && IDs.Any())
             {
                 var tableIDName = typeof(T).GetProperties().SingleOrDefault(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(IncrementalIdentity)));

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace Omegacorp.Core.Utilities
+namespace Omegacorp.Core.Model.Utilities
 {
     public static class TypeHelpers
     {
