@@ -30,13 +30,13 @@ namespace Omegacorp.Core.IO
                 var tableIDName = typeof(T).GetProperties().SingleOrDefault(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(IncrementalIdentity)));
                 if (tableIDName != null)
                 {
-                    if (typeof(IDbConnection) == typeof(SqlConnection))
+                    if (_connection.GetType() == typeof(SqlConnection))
                     {
                         where.Add($"{tableIDName.Name} IN @IDs");
                     }
-                    else if (typeof(IDbConnection) == typeof(NpgsqlConnection))
+                    else if (_connection.GetType() == typeof(NpgsqlConnection))
                     {
-                        where.Add($"{tableIDName.Name} IN @IDs");
+                        where.Add($"{tableIDName.Name} = ANY(@IDs)");
                     }
                     dbArgs.Add("IDs", value: IDs);
                 }
@@ -49,11 +49,11 @@ namespace Omegacorp.Core.IO
                     var descriptorWhere = new List<string>();
                     foreach (var descriptorField in descriptorsFields)
                     {
-                        if (typeof(IDbConnection) == typeof(SqlConnection))
+                        if (_connection.GetType() == typeof(SqlConnection))
                         {
                             descriptorWhere.Add($"{descriptorField.Name} LIKE '%{description}%'");
                         }
-                        else if (typeof(IDbConnection) == typeof(NpgsqlConnection))
+                        else if (_connection.GetType() == typeof(NpgsqlConnection))
                         {
                             descriptorWhere.Add($"LOWER({descriptorField.Name}) LIKE '%{description.ToLower()}%'");
                         }
@@ -69,7 +69,7 @@ namespace Omegacorp.Core.IO
             string countover = (paginationFilter?.Page != null && paginationFilter?.RowsPerPage != null && paginationFilter?.SortBy != null) ? ",\r\n\tCount(*) Over () MaxRows" : "";
             string command = $"SELECT *{countover} FROM {typeof(T).Name} {commandWhere}";
             IEnumerable<T> ret;
-            var cant = 0;
+            long cant = 0;
             if (paginationFilter?.SortBy != null)
             {
                 var orderBy = paginationFilter.SortBy;
@@ -82,18 +82,18 @@ ORDER BY {orderBy} {order}";
             {
                 command = $@"
     {command}
-    OFFSET (@PageNum-1)*@PageSize ROWS
+    OFFSET ((@PageNum-1)*@PageSize) ROWS
     FETCH NEXT @PageSize ROWS ONLY";
-                dbArgs.Add("PageNum", paginationFilter.Page);
-                dbArgs.Add("PageSize", paginationFilter.RowsPerPage);
-                ret = _connection.Query<T, int, T>(command, map: (data, count) => { cant = count; return data; }, param: dbArgs, transaction: _transaction, splitOn: "MaxRows");
+                dbArgs.Add("PageNum", (int)paginationFilter.Page);
+                dbArgs.Add("PageSize", (int)paginationFilter.RowsPerPage);
+                ret = _connection.Query<T, long, T>(command, map: (data, count) => { cant = count; return data; }, param: dbArgs, transaction: _transaction, splitOn: "MaxRows");
             }
             else
             {
                 ret = _connection.Query<T>(command, param: dbArgs, transaction: _transaction);
             }
 
-            int? pages = cant / (paginationFilter?.RowsPerPage ?? 1) + ((cant % (paginationFilter?.RowsPerPage ?? 1)) != 0 ? 1 : 0);
+            int? pages = (int)cant / (paginationFilter?.RowsPerPage ?? 1) + ((cant % (paginationFilter?.RowsPerPage ?? 1)) != 0 ? 1 : 0);
             return new Pagination<T> { Data = ret, Rows = paginationFilter != null ? pages : null };
         }
 
@@ -129,12 +129,12 @@ ORDER BY {orderBy} {order}";
 
             string output = "";
             string command = "";
-            if (typeof(IDbConnection) == typeof(SqlConnection))
+            if (_connection.GetType() == typeof(SqlConnection))
             {
                 output = needsOutput ? "output inserted.ID" : "";
                 command = $"INSERT INTO {typeof(T).Name}({string.Join(",", tableNames.Select(x => x.Name))}) {output} VALUES (@{string.Join(", @", tableNames.Select(x => x.Name))})";
             }
-            else if (typeof(IDbConnection) == typeof(NpgsqlConnection))
+            else if (_connection.GetType() == typeof(NpgsqlConnection))
             {
                 output = needsOutput ? "RETURNING ID" : "";
                 command = $"INSERT INTO {typeof(T).Name}({string.Join(",", tableNames.Select(x => x.Name))}) VALUES (@{string.Join(", @", tableNames.Select(x => x.Name))}) {output};";
@@ -158,12 +158,12 @@ ORDER BY {orderBy} {order}";
             var needsOutput = typeof(T).GetProperties().Any(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(IncrementalIdentity)));
             string output = "";
             string command = "";
-            if (typeof(IDbConnection) == typeof(SqlConnection))
+            if (_connection.GetType() == typeof(SqlConnection))
             {
                 output = needsOutput ? "output inserted.ID" : "";
                 command = $"INSERT INTO {typeof(T).Name}({string.Join(",", tableProps.Select(x => x.Name))}) {output} VALUES ";
             }
-            else if (typeof(IDbConnection) == typeof(NpgsqlConnection))
+            else if (_connection.GetType() == typeof(NpgsqlConnection))
             {
                 output = needsOutput ? "RETURNING ID" : "";
                 command = $"INSERT INTO {typeof(T).Name}({string.Join(",", tableProps.Select(x => x.Name))}) VALUES";
@@ -181,7 +181,7 @@ ORDER BY {orderBy} {order}";
                 }
             }
             command += string.Join(", ", itemsValues);
-            if (typeof(IDbConnection) == typeof(NpgsqlConnection))
+            if (_connection.GetType() == typeof(NpgsqlConnection))
             {
                 command += $" {output}";
             }
@@ -222,10 +222,10 @@ ORDER BY {orderBy} {order}";
 
         public void Delete(string ID)
         {
-            var uniqueID = typeof(T).GetProperties().SingleOrDefault(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(IncrementalIdentity) || y.AttributeType == typeof(NonIncrementalIdentity)));
-            string command = $"DELETE {typeof(T).Name} WHERE {uniqueID.Name + " = @" + uniqueID.Name}";
+            var tableID = typeof(T).GetProperties().SingleOrDefault(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(IncrementalIdentity) || y.AttributeType == typeof(NonIncrementalIdentity)));
+            string command = $"DELETE FROM {typeof(T).Name} WHERE {tableID.Name + " = @" + tableID.Name}";
 
-            _connection.Execute(command, param: new { ID }, transaction: _transaction);
+            _connection.Execute(command, param: new { ID = TypeHelpers.CastPropertyValue(tableID, ID) }, transaction: _transaction);
             return;
         }
 
