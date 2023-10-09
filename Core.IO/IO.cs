@@ -239,9 +239,8 @@ ORDER BY {orderBy} {order}";
         public void Delete(IEnumerable<string> IDs)
         {
             var uniqueID = typeof(T).GetProperties().SingleOrDefault(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(IncrementalIdentity) || y.AttributeType == typeof(NonIncrementalIdentity)));
-            string command = $"DELETE {typeof(T).Name} WHERE {uniqueID.Name} IN @IDs";
-
-            _connection.Execute(command, param: new { IDs }, transaction: _transaction);
+            string command = $"DELETE FROM {typeof(T).Name} WHERE {uniqueID.Name} IN ('{string.Join("','", IDs)}')";
+            _connection.Execute(command, transaction: _transaction);
             return;
         }
 

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Data.SqlClient;
+using System.Data;
 using System.Reflection;
 
 namespace Omegacorp.Core.Model.Utilities
@@ -7,7 +9,7 @@ namespace Omegacorp.Core.Model.Utilities
     {
         public static object CastPropertyValue(PropertyInfo property, string value)
         {
-            if (property == null || String.IsNullOrEmpty(value))
+            if (property == null || string.IsNullOrEmpty(value))
                 return null;
             if (property.PropertyType.IsEnum)
             {
@@ -22,5 +24,25 @@ namespace Omegacorp.Core.Model.Utilities
             else
                 return Convert.ChangeType(value, property.PropertyType);
         }
+
+        public static DbType GetDbType(Type runtimeType)
+        {
+            var nonNullableType = Nullable.GetUnderlyingType(runtimeType);
+            if (nonNullableType != null)
+            {
+                runtimeType = nonNullableType;
+            }
+
+            var templateValue = (Object)null;
+            if (runtimeType.IsClass == false)
+            {
+                templateValue = Activator.CreateInstance(runtimeType);
+            }
+
+            var sqlParamter = new SqlParameter(parameterName: String.Empty, value: templateValue);
+
+            return sqlParamter.DbType;
+        }
+
     }
 }
