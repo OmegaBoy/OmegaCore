@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.Data.Sqlite;
 using Npgsql;
 using Omegacorp.Core.Model.Utilities;
 using System.Collections.Generic;
@@ -44,6 +45,10 @@ namespace Omegacorp.Core.IO
                     else if (_connection.GetType() == typeof(NpgsqlConnection))
                     {
                         where.Add($"{tableIDName.Name} = ANY(@IDs)");
+                    }
+                    else if (_connection.GetType() == typeof(SqliteConnection))
+                    {
+
                     }
                     dbArgs.Add("IDs", value: IDs);
                 }
