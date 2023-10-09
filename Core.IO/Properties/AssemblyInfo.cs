@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Core.IO")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Una interfaz generica entre propidades de clases y base de datos")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Omegacorp")]
 [assembly: AssemblyProduct("Core.IO")]
 [assembly: AssemblyCopyright("Copyright ©  2023")]
 [assembly: AssemblyTrademark("")]
