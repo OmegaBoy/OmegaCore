@@ -92,6 +92,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\DBEngines.cs" />
+    <Compile Include="Service.cs" />
     <Compile Include="Utilities\Attributes.cs" />
     <Compile Include="Utilities\ExtraWhere.cs" />
     <Compile Include="IO.cs" />
