@@ -146,7 +146,7 @@ ORDER BY {orderBy} {order}";
                 output = needsOutput ? "output inserted.ID" : "";
                 command = $"INSERT INTO {typeof(T).Name}({string.Join(",", tableNames.Select(x => x.Name))}) {output} VALUES (@{string.Join(", @", tableNames.Select(x => x.Name))})";
             }
-            else if (_connection.GetType() == typeof(NpgsqlConnection))
+            else if (_connection.GetType() == typeof(NpgsqlConnection) || _connection.GetType() == typeof(SqliteConnection))
             {
                 output = needsOutput ? "RETURNING ID" : "";
                 command = $"INSERT INTO {typeof(T).Name}({string.Join(",", tableNames.Select(x => x.Name))}) VALUES (@{string.Join(", @", tableNames.Select(x => x.Name))}) {output};";

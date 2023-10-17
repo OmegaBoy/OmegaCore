@@ -17,7 +17,7 @@ namespace Omegacorp.Core.IO
         /// Conexion a BBDD
         /// </summary>
         public IDbConnection _sqlConnection;
-        private readonly IO<T> io;
+        public readonly IO<T> _IO;
 
         /// <summary>
         /// Constructor
@@ -41,7 +41,7 @@ namespace Omegacorp.Core.IO
                     throw new Exception("Se debe especificar el motor de base de datos");
             }
 
-            io = new IO<T>(_sqlConnection);
+            _IO = new IO<T>(_sqlConnection);
         }
     }
 }
