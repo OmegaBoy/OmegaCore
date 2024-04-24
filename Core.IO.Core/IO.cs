@@ -10,6 +10,18 @@ using System.Linq;
 
 namespace Omegacorp.Core.IO
 {
+    public class IO
+    {
+        public readonly IDbConnection _connection;
+        public readonly IDbTransaction _transaction;
+
+        public IO(IDbConnection sqlConnection, IDbTransaction sqlTransaction = null)
+        {
+            _connection = sqlConnection;
+            _transaction = sqlTransaction;
+        }
+    }
+
     public class IO<T>
     {
         public readonly IDbConnection _connection;
